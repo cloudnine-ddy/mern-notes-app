@@ -9,7 +9,7 @@ import axiosInstance from "../../utils/axiosInstance";
 import Toast from "../../components/ToastMessage/Toast";
 import EmptyCard from "../../components/Cards/EmptyCard";
 import AddNotesImg from "../../assets/images/add_notes.png";
-
+import NoDataImg from "../../assets/images/no_data.png";
 
 const Home = () => {
   const [openAddEditModal, setOpenAddEditModal] = useState({
@@ -25,8 +25,9 @@ const Home = () => {
   });
 
   const [allNotes, setAllNotes] = useState([]);
-
   const [userInfo, setUserInfo] = useState(null);
+
+  const [isSearch, setIsSearch] = useState(false);
 
   const navigate = useNavigate();
 
@@ -98,20 +99,39 @@ const Home = () => {
       }
     }
   };
+  // Search Note
+  const onSearchNote = async (query) => {
+    try {
+      const response = await axiosInstance.get("/search-notes", {
+        params: { query },
+      });
+      if (response.data && response.data.notes) {
+        setIsSearch(true);
+        setAllNotes(response.data.notes);
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
+  const handleClearSearch = () => {
+    setIsSearch(false);
+    getAllNotes();
+  }; 
 
   useEffect(() => {
-      getAllNotes();
-      getUserInfo();
-      return () => {};
-    }, []);
-  
+    getAllNotes();
+    getUserInfo();
+    return () => {};
+  }, []);
+
   return (
     <>
-      <Navbar userInfo={userInfo} />
+      <Navbar userInfo={userInfo} onSearchNote={onSearchNote} handleClearSearch={handleClearSearch} />
 
       <div className="container mx-auto">
         {allNotes.length > 0 ? (
-        <div className="grid grid-cols-3 gap-4 mt-8">
+          <div className="grid grid-cols-3 gap-4 mt-8">
             {allNotes.map((item, index) => (
               <NoteCard
                 key={item._id}
@@ -130,9 +150,12 @@ const Home = () => {
               />
             ))}
           </div>
-          ) : (
-            <EmptyCard imgSrc={AddNotesImg} message="Start to create your first note!" />
-          )}
+        ) : (
+          <EmptyCard
+            imgSrc={isSearch ? NoDataImg : AddNotesImg}
+            message={isSearch ? "No notes found for the search query." : "Start to create your first note!"}
+          />
+        )}
       </div>
 
       <button
